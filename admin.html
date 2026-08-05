@@ -402,7 +402,13 @@
 
 </div><!-- /#app -->
 
-<script>
+<script type="module">
+import {
+  loadState as fbLoadState,
+  saveState as fbSaveState,
+  login as fbLogin,
+  watchAuth as fbWatchAuth
+} from "./firebase.js";
 // ---------- Room & table definitions (first-pass approximation, drag to fine-tune) ----------
 const ROOMS = {
   salle1: {
@@ -502,8 +508,6 @@ let editMode = false;
 let activeTableId = null;
 let dragging = null;
 
-const STORAGE_KEY = "floorplan-state-v1";
-
 function toast(msg){
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -513,19 +517,20 @@ function toast(msg){
 
 async function loadState(){
   try{
-    const res = await window.storage.get(STORAGE_KEY, true);
-    state = res && res.value ? JSON.parse(res.value) : {};
+    state = await fbLoadState();
   }catch(e){
     state = {};
+    console.error(e);
   }
-  document.getElementById('loadStatus').textContent = "données partagées — synchronisées";
+  document.getElementById('loadStatus').textContent = "connecté à Firebase — synchronisé";
 }
 
 async function saveState(){
   try{
-    await window.storage.set(STORAGE_KEY, JSON.stringify(state), true);
+    await fbSaveState(state);
   }catch(e){
     toast("Erreur de sauvegarde");
+    console.error(e);
   }
 }
 
@@ -767,26 +772,36 @@ document.getElementById('resetDay').onclick = ()=>{
   toast("Nouvelle journée — toutes les salles vidées");
 };
 
-// ---------- Login gate ----------
-const ADMIN_EMAIL = "lestwins@twins.com";
-const ADMIN_PASS = "twins2025";
-
-function tryLogin(){
-  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+// ---------- Login gate (real Firebase Auth) ----------
+async function tryLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
   const pass = document.getElementById('loginPass').value;
   const err = document.getElementById('loginError');
-  if(email === ADMIN_EMAIL && pass === ADMIN_PASS){
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    err.textContent = "";
-    init();
-  } else {
+  err.textContent = "";
+  try{
+    await fbLogin(email, pass);
+    // onAuthStateChanged (below) handles showing the app once login succeeds
+  }catch(e){
     err.textContent = "Email ou mot de passe incorrect";
   }
 }
 document.getElementById('loginBtn').onclick = tryLogin;
 document.getElementById('loginPass').addEventListener('keydown', e=>{ if(e.key==='Enter') tryLogin(); });
 document.getElementById('loginEmail').addEventListener('keydown', e=>{ if(e.key==='Enter') tryLogin(); });
+
+// Watches Firebase's own login state — shows the app when logged in,
+// shows the login screen otherwise. Also keeps you logged in across
+// page refreshes, so you don't have to log in every time.
+fbWatchAuth((user)=>{
+  if(user){
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    init();
+  } else {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+  }
+});
 
 // ---------- Init ----------
 async function init(){
