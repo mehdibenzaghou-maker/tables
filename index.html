@@ -328,7 +328,11 @@
 
 </div><!-- /#app -->
 
-<script>
+<script type="module">
+import {
+  loadState as fbLoadState,
+  subscribeState as fbSubscribeState
+} from "./firebase.js";
 // ---------- Room & table definitions (first-pass approximation, drag to fine-tune) ----------
 const ROOMS = {
   salle1: {
@@ -428,8 +432,6 @@ let editMode = false;
 let activeTableId = null;
 let dragging = null;
 
-const STORAGE_KEY = "floorplan-state-v1";
-
 function toast(msg){
   const t = document.getElementById('toast');
   t.textContent = msg;
@@ -439,20 +441,12 @@ function toast(msg){
 
 async function loadState(){
   try{
-    const res = await window.storage.get(STORAGE_KEY, true);
-    state = res && res.value ? JSON.parse(res.value) : {};
+    state = await fbLoadState();
   }catch(e){
     state = {};
+    console.error(e);
   }
-  document.getElementById('loadStatus').textContent = "données partagées — synchronisées";
-}
-
-async function saveState(){
-  try{
-    await window.storage.set(STORAGE_KEY, JSON.stringify(state), true);
-  }catch(e){
-    toast("Erreur de sauvegarde");
-  }
+  document.getElementById('loadStatus').textContent = "connecté à Firebase — mise à jour en direct";
 }
 
 function getTableState(room, id){
@@ -542,14 +536,16 @@ function escapeHtml(s){
 
 // (drag-to-reposition disabled in read-only view — layout is managed from admin.html)
 
-// ---------- Init + live refresh ----------
+// ---------- Init + live real-time updates ----------
 (async function init(){
   await loadState();
   render();
-  setInterval(async ()=>{
-    await loadState();
+  // Fires instantly whenever admin.html changes a reservation —
+  // no polling delay, updates the moment it happens.
+  fbSubscribeState((newState)=>{
+    state = newState;
     render();
-  }, 4000);
+  });
 })();
 </script>
 </body>
