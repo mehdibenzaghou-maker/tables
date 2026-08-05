@@ -11,25 +11,24 @@
 // (see the integration steps explained in chat).
 // ============================================================
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.17.1/firebase-app.js";
 import {
   getFirestore, doc, getDoc, setDoc, onSnapshot
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-firestore.js";
 import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from "https://www.gstatic.com/firebasejs/12.17.1/firebase-auth.js";
 
 // ------------------------------------------------------------
-// 1. PASTE YOUR FIREBASE CONFIG HERE
-//    (Firebase console → Project settings → General → Your apps → SDK setup)
+// 1. FIREBASE CONFIG — lestwinstable project
 // ------------------------------------------------------------
 const firebaseConfig = {
-  apiKey: "REPLACE_ME",
-  authDomain: "REPLACE_ME.firebaseapp.com",
-  projectId: "REPLACE_ME",
-  storageBucket: "REPLACE_ME.appspot.com",
-  messagingSenderId: "REPLACE_ME",
-  appId: "REPLACE_ME"
+  apiKey: "AIzaSyCr6_w7stl2azSgJXa8la-t1Lf00IU9EUk",
+  authDomain: "lestwinstable.firebaseapp.com",
+  projectId: "lestwinstable",
+  storageBucket: "lestwinstable.firebasestorage.app",
+  messagingSenderId: "851369925811",
+  appId: "1:851369925811:web:bcc974b47758bca97124c6"
 };
 
 const app = initializeApp(firebaseConfig);
