@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>Plan de Salle — Réservations</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Space+Mono&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -253,20 +254,62 @@
     font-family:'Space Mono',monospace;font-size:12px;
     padding:10px 18px;border-radius:4px;
     opacity:0;transition:opacity .25s;pointer-events:none;z-index:200;
+    max-width:90vw;text-align:center;
   }
   .toast.show{opacity:1;}
+
+  /* Login gate */
+  .login-screen{
+    position:fixed;inset:0;background:var(--paper);
+    display:flex;align-items:center;justify-content:center;
+    z-index:500;padding:20px;
+  }
+  .login-box{
+    background:var(--paper-panel);border:1.5px solid var(--wall);
+    border-radius:4px;padding:28px 26px;width:100%;max-width:320px;
+    box-shadow:0 8px 30px rgba(0,0,0,0.15);
+  }
+  .login-box h2{font-family:'Fraunces',serif;margin:0 0 4px;font-size:22px;}
+  .login-box .sub{font-family:'Space Mono',monospace;font-size:11px;color:#8a8672;margin-bottom:18px;}
+  .login-box input{
+    width:100%;padding:11px 12px;font-family:'Inter',sans-serif;font-size:15px;
+    border:1.5px solid var(--grid);border-radius:3px;margin-bottom:10px;
+  }
+  .login-box .btn{width:100%;margin-top:6px;padding:12px;font-size:14px;}
+  .login-error{color:var(--reserved);font-family:'Space Mono',monospace;font-size:11px;min-height:14px;margin-top:4px;}
+
+  /* Mobile */
+  @media (max-width: 720px){
+    body{padding:12px;}
+    .header{flex-direction:column;align-items:flex-start;gap:10px;}
+    .header h1{font-size:22px;}
+    .toolbar{width:100%;}
+    .toolbar .btn{flex:1;font-size:12px;padding:11px 8px;}
+    .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;}
+    .tab{flex:0 0 auto;padding:10px 14px;font-size:11px;}
+    .room-meta{flex-direction:column;gap:2px;}
+    .legend{flex-wrap:wrap;gap:10px;font-size:10px;}
+    .legend span:last-child{width:100%;margin-left:0;order:99;}
+    .table{font-size:8px;}
+    .table .name-tag{font-size:8px;}
+    .modal{width:calc(100vw - 40px);max-width:340px;}
+    .modal .row{flex-direction:column;}
+    .modal .row .btn{padding:13px;}
+  }
+  @media (max-width: 420px){
+    .header h1{font-size:19px;}
+    .toolbar .btn{font-size:11px;padding:10px 6px;}
+  }
 </style>
 </head>
 <body>
+
+<div id="app">
 
 <div class="header">
   <div>
     <h1>Plan de Salle</h1>
     <div class="sub" id="loadStatus">chargement…</div>
-  </div>
-  <div class="toolbar">
-    <button class="btn" id="editToggle">Modifier disposition</button>
-    <button class="btn danger" id="resetRoom">Vider ce plan</button>
   </div>
 </div>
 
@@ -283,20 +326,9 @@
   <span style="margin-left:auto;">Cliquez une table pour réserver / libérer · Mode édition pour déplacer</span>
 </div>
 
-<div class="overlay" id="overlay">
-  <div class="modal">
-    <button class="close" id="modalClose">✕</button>
-    <h3 id="modalTitle">Table</h3>
-    <div class="meta" id="modalMeta"></div>
-    <input id="nameInput" placeholder="Nom du client" autocomplete="off">
-    <div class="row">
-      <button class="btn active" id="reserveBtn">Réserver</button>
-      <button class="btn danger" id="clearBtn">Libérer</button>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
+
+</div><!-- /#app -->
 
 <script>
 // ---------- Room & table definitions (first-pass approximation, drag to fine-tune) ----------
@@ -312,6 +344,7 @@ const ROOMS = {
       {id:"S1-05",shape:"circle",cap:"4-6p",x:43,y:22,w:8,h:12},
       {id:"S1-06",shape:"circle",cap:"4-6p",x:32,y:37,w:8,h:12},
       {id:"S1-07",shape:"circle",cap:"4-6p",x:43,y:37,w:8,h:12},
+      {id:"S1-HUB-L",shape:"hub",x:36,y:27,w:5,h:9},
       {id:"S1-08",shape:"circle",cap:"2p",x:54,y:30,w:5,h:8},
       {id:"S1-09",shape:"circle",cap:"4-6p",x:25,y:50,w:8,h:12},
       {id:"S1-10",shape:"circle",cap:"4-6p",x:50,y:50,w:8,h:12},
@@ -322,6 +355,7 @@ const ROOMS = {
       {id:"S1-15",shape:"circle",cap:"4-6p",x:87,y:22,w:8,h:12},
       {id:"S1-16",shape:"circle",cap:"4-6p",x:76,y:37,w:8,h:12},
       {id:"S1-17",shape:"circle",cap:"4-6p",x:87,y:37,w:8,h:12},
+      {id:"S1-HUB-R",shape:"hub",x:80,y:27,w:5,h:9},
       {id:"S1-18",shape:"circle",cap:"2p",x:64,y:30,w:5,h:8},
       {id:"S1-19",shape:"circle",cap:"4-6p",x:69,y:50,w:8,h:12},
       {id:"S1-20",shape:"circle",cap:"4-6p",x:91,y:50,w:8,h:12},
@@ -389,6 +423,7 @@ const ROOMS = {
 };
 
 const ROOM_ORDER = ["salle1","salle2","vip","balcon"];
+const NO_CHAIRS = new Set(["S1-BAR","BAL-14","VIP-02"]);
 let state = {}; // room -> {tableId: {x,y,status,name}}
 let currentRoom = "salle1";
 let editMode = false;
@@ -455,11 +490,23 @@ function render(){
   planEl.innerHTML = "";
 
   room.tables.forEach(t=>{
+    if(t.shape === "hub"){
+      const pos = (state[currentRoom] && state[currentRoom][t.id] && state[currentRoom][t.id].pos) || {x:t.x,y:t.y};
+      const hub = document.createElement('div');
+      hub.className = "hub";
+      hub.style.left = pos.x + "%";
+      hub.style.top = pos.y + "%";
+      hub.style.width = t.w + "%";
+      hub.style.height = t.h + "%";
+      planEl.appendChild(hub);
+      return;
+    }
     const st = getTableState(currentRoom, t.id);
     const pos = (state[currentRoom] && state[currentRoom][t.id] && state[currentRoom][t.id].pos) || {x:t.x,y:t.y};
 
     const el = document.createElement('div');
     el.className = "table " + t.shape + (st.status==="reserved" ? " reserved" : "");
+    if(!NO_CHAIRS.has(t.id)) el.classList.add("has-chairs");
     el.style.left = pos.x + "%";
     el.style.top = pos.y + "%";
     el.style.width = t.w + "%";
@@ -476,8 +523,7 @@ function render(){
     inner.innerHTML = `<span>${label}</span>` + (st.status==="reserved" ? `<span class="name-tag">${escapeHtml(st.name)}</span>` : "");
     el.appendChild(inner);
 
-    el.addEventListener('pointerdown', (e)=>onPointerDown(e, el, t));
-    el.addEventListener('click', (e)=>{ if(!el._didDrag) openModal(t); });
+    el.addEventListener('click', ()=>{ /* view-only: no editing here */ });
 
     planEl.appendChild(el);
   });
@@ -489,96 +535,16 @@ function escapeHtml(s){
   return d.innerHTML;
 }
 
-// ---------- Drag to reposition (edit mode only) ----------
-function onPointerDown(e, el, t){
-  if(!editMode) return;
-  e.preventDefault();
-  const plan = document.getElementById('plan');
-  const rect = plan.getBoundingClientRect();
-  el._didDrag = false;
-  el.classList.add('dragging');
-  const startX = e.clientX, startY = e.clientY;
+// (drag-to-reposition disabled in read-only view — layout is managed from admin.html)
 
-  function move(ev){
-    const dx = ev.clientX - startX, dy = ev.clientY - startY;
-    if(Math.abs(dx) > 3 || Math.abs(dy) > 3) el._didDrag = true;
-    const newLeftPx = el.offsetLeft + (el._didDrag ? dx : 0);
-    // recompute relative to plan each move using percentage
-    const xPct = Math.min(100 - parseFloat(el.style.width), Math.max(0, ((ev.clientX - rect.left) / rect.width * 100) - parseFloat(el.style.width)/2));
-    const yPct = Math.min(100 - parseFloat(el.style.height), Math.max(0, ((ev.clientY - rect.top) / rect.height * 100) - parseFloat(el.style.height)/2));
-    el.style.left = xPct + "%";
-    el.style.top = yPct + "%";
-    el._newPos = {x:xPct, y:yPct};
-  }
-  function up(){
-    el.classList.remove('dragging');
-    document.removeEventListener('pointermove', move);
-    document.removeEventListener('pointerup', up);
-    if(el._didDrag && el._newPos){
-      setTableState(currentRoom, t.id, {pos: el._newPos});
-      saveState();
-    }
-    setTimeout(()=>{ el._didDrag = false; }, 0);
-  }
-  document.addEventListener('pointermove', move);
-  document.addEventListener('pointerup', up);
-}
-
-// ---------- Reservation modal ----------
-function openModal(t){
-  if(editMode) return;
-  activeTableId = t.id;
-  const st = getTableState(currentRoom, t.id);
-  document.getElementById('modalTitle').textContent = t.id;
-  document.getElementById('modalMeta').textContent = (t.label || t.cap) + " · " + ROOMS[currentRoom].name;
-  document.getElementById('nameInput').value = st.name || "";
-  document.getElementById('overlay').classList.add('show');
-  document.getElementById('nameInput').focus();
-}
-function closeModal(){
-  document.getElementById('overlay').classList.remove('show');
-  activeTableId = null;
-}
-document.getElementById('modalClose').onclick = closeModal;
-document.getElementById('overlay').onclick = (e)=>{ if(e.target.id==='overlay') closeModal(); };
-
-document.getElementById('reserveBtn').onclick = ()=>{
-  const name = document.getElementById('nameInput').value.trim();
-  if(!name){ toast("Entrez un nom"); return; }
-  setTableState(currentRoom, activeTableId, {status:"reserved", name});
-  saveState();
-  render();
-  closeModal();
-  toast("Table réservée");
-};
-document.getElementById('clearBtn').onclick = ()=>{
-  setTableState(currentRoom, activeTableId, {status:"free", name:""});
-  saveState();
-  render();
-  closeModal();
-  toast("Table libérée");
-};
-
-document.getElementById('editToggle').onclick = ()=>{
-  editMode = !editMode;
-  document.getElementById('editToggle').classList.toggle('active', editMode);
-  document.getElementById('editToggle').textContent = editMode ? "Terminer l'édition" : "Modifier disposition";
-  render();
-};
-
-document.getElementById('resetRoom').onclick = ()=>{
-  if(!confirm("Vider toutes les réservations de " + ROOMS[currentRoom].name + " ?")) return;
-  const room = state[currentRoom] || {};
-  Object.keys(room).forEach(id=>{ room[id].status="free"; room[id].name=""; });
-  saveState();
-  render();
-  toast("Plan vidé");
-};
-
-// ---------- Init ----------
+// ---------- Init + live refresh ----------
 (async function init(){
   await loadState();
   render();
+  setInterval(async ()=>{
+    await loadState();
+    render();
+  }, 4000);
 })();
 </script>
 </body>
